@@ -1,0 +1,358 @@
+<!doctype html>
+<html>
+
+<head>
+  <!--link rel="stylesheet" href=/manager/webserver/assets/css/homey.css-->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="styles.css" />
+  <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
+  <!--script type="text/javascript" src="/manager/webserver/assets/js/jquery.js"></script-->
+  <!--script type="text/javascript" src="vue.min.js" data-origin="settings"></script-->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.22/dist/vue.js"></script>
+  <script type="text/javascript" src="settings.js" data-origin="settings"></script>
+</head>
+
+<body>
+
+  <template id="modal-del-setpoints-template">
+    <transition name="modal-del-setpoints">
+      <div class="modal-mask">
+        <div class="modal-wrapper">
+          <div class="modal-container">
+
+            <div class="modal-header">
+                <slot name="header">
+                    <h2>Are you sure?</h2>
+                </slot>
+            </div>
+
+            <div class="modal-body">
+                <slot name="body">
+                    <p>Are you sure you want to delete this setpoint?</p>
+                    <p>{{setpoint.time.hours | pad }}:{{setpoint.time.mins | pad }} - {{setpoint.temp}}C</p>
+                </slot>
+            </div>
+
+            <div class="mdl-grid">
+                <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch modal-center">
+                  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored" @click="$emit('close')">
+                    Cancel
+                  </button>
+                </div>
+                <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch modal-center">
+                  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" @click="deleteSetPoint(setpoint)">
+                    OK
+                  </button>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </template>
+
+  <template id="modal-edit-setpoints-template">
+    <transition name="modal-edit-setpoints">
+      <div class="modal-mask">
+        <div class="modal-wrapper">
+          <div class="modal-container">
+
+            <div class="modal-header">
+                <slot name="header">
+                    <h1>Edit Setpoint</h1>
+                </slot>
+            </div>
+
+            <div class="modal-body">
+                <div class="mdl-grid schedule-edit-grid">
+                    <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                      <button @click="inchours()" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                        <i class="material-icons">arrow_drop_up</i>
+                      </button>
+                    </div>
+                    <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                      <button @click="incmins()" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                        <i class="material-icons">arrow_drop_up</i>
+                      </button>
+                    </div>
+                    <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch">
+                      <button @click="inctemp()" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                        <i class="material-icons">arrow_drop_up</i>
+                      </button>
+                    </div>
+                </div>
+                <div class="mdl-grid schedule-edit-grid ">
+                    <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                      {{setpoint.time.hours | pad }}
+                    </div>
+                    <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                      {{setpoint.time.mins | pad }}
+                    </div>
+                    <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch">
+                      {{setpoint.temp}} C
+                    </div>
+                </div>
+                <div class="mdl-grid schedule-edit-grid">
+                    <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                      <button @click="dechours()" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                        <i class="material-icons">arrow_drop_down</i>
+                      </button>
+                    </div>
+                    <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                      <button @click="decmins()" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                        <i class="material-icons">arrow_drop_down</i>
+                      </button>
+                    </div>
+                    <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch">
+                      <button @click="dectemp()" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                        <i class="material-icons">arrow_drop_down</i>
+                      </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mdl-grid">
+                <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch modal-center">
+                  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored" @click="$emit('close')">
+                    Cancel
+                  </button>
+                </div>
+                <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch modal-center">
+                  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" @click="updateSetPoint()">
+                    OK
+                  </button>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </template>
+
+
+  <template id="modal-clone-setpoints-template">
+    <transition name="modal-clone-setpoints">
+      <div class="modal-mask">
+        <div class="modal-wrapper">
+          <div class="modal-container">
+
+            <div class="modal-header">
+                    <h2>Select Target Days</h2>
+            </div>
+
+            <div class="modal-body">
+                <ul class="demo-list-control mdl-list">
+                  <li v-for="(day, index) in week" class="mdl-list__item week-list-item-condensed">
+                    <span class="mdl-list__item-primary-content">
+                      {{ day }}
+                    </span>
+                    <span class="mdl-list__item-secondary-action">
+                      <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" :for="day">
+                        <input type="checkbox" :id="day" :value="index" v-model="myclonenewdays" class="mdl-checkbox__input"/>
+                      </label>
+                    </span>
+                  </li>
+                </ul>
+            </div>
+
+            <div class="mdl-grid">
+                <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch modal-center">
+                  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored" @click="$emit('close')">
+                    Cancel
+                  </button>
+                </div>
+                <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch modal-center">
+                  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" @click="cloneDays(cloneorigday, myclonenewdays)">
+                    OK
+                  </button>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </template>
+
+  <div id="app">
+
+    <!-- MDL Progress Bar with Indeterminate Progress -->
+    <div v-if="!isLoaded()" id="loading" class="mdl-progress mdl-js-progress mdl-progress__indeterminate"></div>
+
+    <div v-cloak id="settingsHeader">
+      <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent section-header-button" v-on:click="showSettings()">
+        Settings
+      </button>
+      <div v-show="showingSettings">
+        <ul id="settingsSection" class="mdl-list settings-list-control">
+          <li class="mdl-list__item mdl-list__item--three-line">
+                <span class="mdl-list__item-primary-content" data-i18n="settings.awayMode">
+                  <span>Away Mode</span>
+                  <span class="mdl-list__item-text-body">
+                    Set when you're away, will over-ride the schedules and keep all the
+                    thermostats to the same preset temperature.
+                  </span>
+                </span>
+                <span class="mdl-list__item-secondary-action">
+                  <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" :for="awayMode">
+                    <input type="checkbox" :id="awayMode" class="mdl-switch__input" @click="changeAwayMode()" unchecked>
+                  </label>
+                </span>
+          </li>
+
+          <li class="mdl-list__item mdl-list__item--three-line">
+            <span class="mdl-list__item-primary-content" data-i18n="settings.mqttLogging">
+              <span>MQTT Logging</span>
+              <span class="mdl-list__item-text-body">
+                Enable logging via MQTTClient (if it's installed).
+              </span>
+            </span>
+            <span class="mdl-list__item-secondary-action">
+              <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" :for="mqttLogging">
+                <input type="checkbox" :id="mqttLogging" class="mdl-switch__input" @click="changeMqttLogging()" checked>
+              </label>
+            </span>
+          </li>
+
+          <li class="mdl-list__item mdl-list__item--three-line">
+                <span class="mdl-list__item-primary-content" data-i18n="settings.hwSchedule">
+                  <span>Hot Water Schedule</span>
+                  <span class="mdl-list__item-text-body">
+                    Enables control of Hot Water, assuming you need such a thing.
+                  </span>
+                </span>
+                <span class="mdl-list__item-secondary-action">
+                  <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" :for="hwSchedule">
+                    <input type="checkbox" :id="hwSchedule" class="mdl-switch__input" @click="changehwSchedule()" unchecked>
+                  </label>
+                </span>
+          </li>
+
+        </ul> <!-- End of list-->
+
+        <div class="button-center-div">
+          <button id="boostHeating"
+            class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored"
+            @click="boostHeating()" data-i18n="tab1.history.btnBoostHeating">
+            Boost Heating
+          </button>
+        </div>
+
+        <div class="button-center-div">
+          <button id="boostHotWater"
+            class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored"
+            @click="boostHotWater()" data-i18n="tab1.history.boostHotWater">
+            Boost Hot Water
+          </button>
+        </div>
+
+      </div> <!-- End of div settings -->
+    </div>
+
+    <div v-cloak id="zonesHeader">
+      <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent section-header-button" v-on:click="showZones">
+        Enabled Zones
+      </button>
+      <div v-show="showingZones">
+        <ul id="zonesSection" class="mdl-list zones-list-control">
+              <li class="mdl-list__item zones-list-item-condensed" v-for="zone in zones">
+                <span class="mdl-list__item-primary-content">
+                  <i class="material-icons mdl-list__item-avatar">{{zone.icon}}</i>
+                  <span v-if="zone.level == 2">--</span>
+                  <span v-if="zone.level == 3">----</span>
+                  <span v-if="zone.level == 4">------</span>
+                  <span>{{ zone.name }}</span>
+                </span>
+                <span class="mdl-list__item-secondary-action">
+                  <label v-if="!isEnabled(zone)" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" :for="zone.id">
+                    <input type="checkbox" class="mdl-switch__input" @click="enableZone(zone.id)" :id="zone.id" unchecked>
+                  </label>
+                  <label v-if="isEnabled(zone)" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" :for="zone.id">
+                    <input type="checkbox" class="mdl-switch__input" @click="disableZone(zone.id)" :id="zone.id" checked>
+                  </label>
+                </span>
+              </li> <!-- End of zGrid row -->
+          </ul> <!-- End of div zoneSection -->
+        </div> <!-- End of zones section -->
+      </div>
+
+      <div v-cloak id='schedulesHeader'>
+        <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent section-header-button" v-on:click="showSchedules">
+          Set Schedules
+        </button>
+        <div v-show="showingSchedules">
+          <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+            <select v-model="selectedZone" class="mdl-textfield__input" :id="selectedZone">
+              <option v-for="option in activezones" v-bind:value="option.id">
+                {{ option.name }}
+              </option>
+            </select>
+            <label class="mdl-textfield__label" :for="selectedZone">Select active Zone to Edit</label>
+          </div>
+
+          <div v-if="selectedZone != null" id="editingSchedule">
+
+            <div class="mdl-grid schedule-grid">
+              <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                <button @click="prevDay" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                  <i class="material-icons">arrow_back</i>
+                </button>
+              </div>
+              <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch">
+                  {{ currentDayName }}
+              </div>
+              <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                <button @click="nextDay" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                  <i class="material-icons">arrow_forward</i>
+                </button>
+              </div>
+            </div>
+
+            <div class="mdl-grid schedule-grid" v-for="item in displaySchedule">
+              <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                <button  @click="confirmDeleteSetpoint(item)" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                  <i class="material-icons">delete_forever</i>
+                </button>
+              </div>
+              <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">{{item.time.hours | pad }}:{{item.time.mins | pad }}</div>
+              <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">{{item.temp}}C</div>
+              <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                <button  @click="showEditSetpoint(item)" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                  <i class="material-icons">edit</i>
+                </button>
+              </div>
+            </div>
+
+            <div class="mdl-grid schedule-grid">
+              <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch">
+                <button @click="showCreateSetpoint()" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                  <i class="material-icons">add_circle</i>
+                </button>
+              </div>
+              <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch">
+                <button @click="showCloneSetpoints()" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                  <i class="material-icons">low_priority</i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <modal-del-setpoints v-if="showModalDelSetpoints" @close="showModalDelSetpoints = false" :setpoint="dspmodalitem">
+          </modal-del-setpoints>
+
+          <modal-edit-setpoints v-if="showModalEditSetpoints" @close="showModalEditSetpoints = false" :origsetpoint="espmodalitem">
+          </modal-edit-setpoints>
+
+          <modal-clone-setpoints v-if="showModalCloneSetpoints" @close="showModalCloneSetpoints = false" :cloneorigday="cloneorigday" :clonenewdays="clonenewdays">
+          </modal-clone-setpoints>
+
+
+
+      </div> <!--End of showingSChedules-->
+    </div>
+
+    </div> <!-- End of div app -->
+</body>
+
+</html>

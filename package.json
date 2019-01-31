@@ -1,0 +1,11 @@
+{
+    "name": "uk.co.iooop.logi",
+    "version": "2.0.0",
+    "description": "This app adds Thermostat scheduling to Homey",
+    "main": "app.js",
+    "dependencies": {
+        "athom-api": "^2.1.156"
+    },
+    "author": "Special Circumstances <logi@iooop.co.uk>",
+    "license": "GPL"
+}

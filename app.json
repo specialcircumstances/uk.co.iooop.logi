@@ -1,0 +1,26 @@
+{
+  "id": "uk.co.iooop.logi",
+  "version": "2.0.0",
+  "compatibility": ">=2.0.0",
+  "sdk": 2,
+  "name": {
+    "en": "Logi Heating Scheduler"
+  },
+  "description": {
+    "en": "Heating Scheduler for Homey v2"
+  },
+  "category": [
+    "climate"
+  ],
+  "permissions": [ "homey:manager:api", "homey:app:nl.scanno.mqtt" ],
+  "images": {
+    "large": "/assets/images/large.png",
+    "small": "/assets/images/small.png"
+  },
+  "author": {
+    "name": "Special Circumstances",
+    "email": "logi@iooop.co.uk"
+  },
+  "capabilities": {},
+  "drivers": []
+  }
