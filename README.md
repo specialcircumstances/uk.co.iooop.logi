@@ -50,3 +50,5 @@ Much credit to the Hemidall application (https://apps.athom.com/app/com.uc.heimd
 If you have installed it, this application will also use the Homey MQTT Client (https://apps.athom.com/app/nl.scanno.mqtt).
 
 So, here's the thing, this app is still beta. That means it may not work for you, or be suitable for your needs. I'd love you to try it though, and let me know if you like it (or if you have any problems).
+
+Note also some of the components are CDN provided and running in dev mode (e.g. Vue).
