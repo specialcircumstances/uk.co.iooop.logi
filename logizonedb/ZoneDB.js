@@ -88,6 +88,15 @@ class ZoneDay {
         this.addSetPoint('23:30',19);
     }
 
+    loadDay (day) {
+        let newsp = [];
+        for (let sp in day) {
+            let ntime = this.uiTimeToStr(day[sp].time.hours, day[sp].time.mins);
+            newsp.push(new SetPoint(ntime,day[sp].temp));
+        }
+        this.setpoints = newsp;
+    }
+
     sort () {
         // Sorts the setpoints in order.
         this.setpoints.sort(function (a,b) {
@@ -232,6 +241,13 @@ class ZoneSchedule {
         this.sat = new ZoneDay();
     }
 
+    loadSchedule(schedule) {
+        // load a stringified schedule
+        for (let day in this) {
+            this[day].loadDay(schedule[day]['setpoints']);
+        }
+    }
+
     getDay (date) {
         // date is a Date object
         let day = date.getDay();
@@ -322,6 +338,21 @@ class Zone {
             this.active = true;
             this.schedule = new ZoneSchedule();
         } // Top level schedule always active
+    }
+
+
+    loadZone(slz) {
+        // slz should be a stringified zone
+        // Want to support defined but inactive zones.
+        // however, we only load activity and schedules never any of the
+        // structure
+        if (slz.active === true) { console.log('    Zone is active.'); }
+        this.active = slz.active;
+        if (slz.schedule !== null) {
+            console.log('    Schedule is present.');
+            this.schedule = new ZoneSchedule();
+            this.schedule.loadSchedule(slz.schedule);
+        }
     }
 
 
@@ -587,6 +618,29 @@ class ZoneDB {
         console.log('Invalid Zone ID in getSchedule: ' + zoneId);
         return [];
     }
+
+
+    loadSavedSettings(settings) {
+        // Loads saved setting which were stringified me.
+        if (settings.zoneDbVersion !== zoneDbVersion) {
+            console.log('Zone DB in settings does not match.');
+            console.log('Currently, this means I will not load these settings.');
+            console.log('So they will be overwritten.... sorry....');
+        }
+        let slz = settings.zonelist;
+        for (let zone in slz) {
+            // do we (still) have this zone defined?
+            let foundZone = this.getZoneById(slz[zone].id);
+            if (foundZone !== null) {
+                console.log('Loading zone schedule:' + slz[zone].name);
+                foundZone.loadZone(slz[zone]);
+            } else {
+                console.log('Loaded zone no longer exists, discarding.');
+            }
+        }
+
+    }
+
 }
 
 

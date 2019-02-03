@@ -56,33 +56,83 @@ class Logi extends Homey.App {
 
     //uiEnableZone( args.params.id, args.body );
     uiEnableZone( id, argsBody ) {
-        return myZoneDB.enableZone(id);
+        let result = myZoneDB.enableZone(id);
+        if (result === true) {
+            this.saveZoneDB();
+        }
+        return result;
     }
 
     uiDisableZone( id, argsBody ) {
-        return myZoneDB.disableZone(id,argsBody.andDelete);
+        let result = myZoneDB.disableZone(id,argsBody.andDelete);
+        if (result === true) {
+            this.saveZoneDB();
+        }
+        return result;
     }
 
     uiDeleteSetpoint( params ) {
-        return myZoneDB.getZoneById(params.zone).schedule.getByNum(params.day).uiDeleteSetpoint(params.hours,params.mins);
+        let result = myZoneDB.getZoneById(params.zone).schedule.getByNum(params.day).uiDeleteSetpoint(params.hours,params.mins);
+        if (result === true) {
+            this.saveZoneDB();
+        }
+        return result;
     }
 
     uiUpdateSetpoint( params, body) {
-        return myZoneDB.getZoneById(params.zone).schedule.getByNum(params.day).uiUpdateSetpoint(body.orig, body.new);
+        let result = myZoneDB.getZoneById(params.zone).schedule.getByNum(params.day).uiUpdateSetpoint(body.orig, body.new);
+        if (result === true) {
+            this.saveZoneDB();
+        }
+        return result;
     }
 
     uiCreateSetpoint(params, body) {
-        return myZoneDB.getZoneById(params.zone).schedule.getByNum(params.day).uiCreateSetpoint(body.new);
+        let result = myZoneDB.getZoneById(params.zone).schedule.getByNum(params.day).uiCreateSetpoint(body.new);
+        if (result === true) {
+            this.saveZoneDB();
+        }
+        return result;
     }
 
     uiCloneDays(params, body) {
-        return myZoneDB.getZoneById(params.zone).schedule.cloneDays(body.src, body.dsts);
+        let result = myZoneDB.getZoneById(params.zone).schedule.cloneDays(body.src, body.dsts);
+        if (result === true) {
+            this.saveZoneDB();
+        }
+        return result;
     }
 
     // Get all devices function for API
     async getDevices() {
         const api = await this.getApi();
         return await this.api.devices.getDevices();
+    }
+
+    replacer(key, value) {
+        // Filtering out properties
+        if (key === 'zonetree') {
+            return undefined;
+        }
+        return value;
+    }
+
+    async saveZoneDB() {
+        // Saves zoneDB to Homey settings.
+        let zonedb = JSON.stringify(myZoneDB, this.replacer);
+        let result = await Homey.ManagerSettings.set('schedules', zonedb);
+        this.mlog('Saved schedules to Homey settings.');
+    }
+
+    loadZoneDB() {
+        // Loads zoneDB from Homey settings, if it is present.
+        let result = JSON.parse(Homey.ManagerSettings.get('schedules'));
+        if (typeof result.zonelist !== 'undefined') {
+            myZoneDB.loadSavedSettings(result);
+            this.mlog('Loaded saved schedules'); // should add more error handling
+        } else {
+            this.mlog('Could not load saved schedules from Homey.');
+        }
     }
 
     async onInit() {
@@ -94,7 +144,9 @@ class Logi extends Homey.App {
         await this.loadZones();
         await this.enumerateDevices();
         await this.registerCronJob();
+        this.loadZoneDB();
         this.mlog('Logi Heating Scheduler init complete.');
+        //await this.saveZoneDB();
     }
 
     async registerCronJob() {
@@ -121,7 +173,6 @@ class Logi extends Homey.App {
     }
 
     async registerCronListener() {
-        let result;
         let task;
         let ref = this;
         try {
