@@ -7,5 +7,5 @@
         "athom-api": "^2.1.156"
     },
     "author": "Special Circumstances <logi@iooop.co.uk>",
-    "license": "GPL"
+    "license": "MIT"
 }
