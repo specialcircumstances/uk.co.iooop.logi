@@ -9,8 +9,8 @@
   <link rel="stylesheet" type="text/css" href="styles.css" />
   <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
   <!--script type="text/javascript" src="/manager/webserver/assets/js/jquery.js"></script-->
-  <script type="text/javascript" src="vue.min.js" data-origin="settings"></script>
-  <!--script src="https://cdn.jsdelivr.net/npm/vue@2.5.22/dist/vue.js"></script-->
+  <!--script type="text/javascript" src="vue.min.js" data-origin="settings"></script-->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.22/dist/vue.js"></script>
   <script type="text/javascript" src="settings.js" data-origin="settings"></script>
 </head>
 
@@ -229,6 +229,20 @@
                 </span>
           </li>
 
+          <li class="mdl-list__item mdl-list__item--three-line">
+                <span class="mdl-list__item-primary-content">
+                  <span>Show All Zones</span>
+                  <span class="mdl-list__item-text-body">
+                    Show all zones, even those which do not contain thermostats.
+                  </span>
+                </span>
+                <span class="mdl-list__item-secondary-action">
+                  <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="cbshowallzones">
+                    <input type="checkbox" id="cbshowallzones" :checked="showAllZones" v-model="showAllZones" class="mdl-switch__input">
+                  </label>
+                </span>
+          </li>
+
         </ul> <!-- End of list-->
 
         <div class="button-center-div">
@@ -256,13 +270,13 @@
       </button>
       <div v-show="showingZones">
         <ul id="zonesSection" class="mdl-list zones-list-control">
-              <li class="mdl-list__item zones-list-item-condensed" v-for="zone in zones">
+              <li class="mdl-list__item zones-list-item-condensed" v-for="zone in populatedzones">
                 <span class="mdl-list__item-primary-content">
                   <i class="material-icons mdl-list__item-avatar">{{zone.icon}}</i>
                   <span v-if="zone.level == 2">--</span>
                   <span v-if="zone.level == 3">----</span>
                   <span v-if="zone.level == 4">------</span>
-                  <span>{{ zone.name }}</span>
+                  <span>{{ zone.name }} ({{ zone.activemembers }}/{{ zone.members }})</span>
                 </span>
                 <span class="mdl-list__item-secondary-action">
                   <label v-if="!isEnabled(zone)" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" :for="zone.id">

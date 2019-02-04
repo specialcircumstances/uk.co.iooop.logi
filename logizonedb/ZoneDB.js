@@ -332,6 +332,8 @@ class Zone {
         this.name = name;
         this.icon = this.mapIcons(icon);
         this.active = false;
+        this.members = 0;
+        this.activemembers = 0;
         this.parent = parent;
         this.schedule = null;
         if ( parent == null ) {
@@ -346,13 +348,23 @@ class Zone {
         // Want to support defined but inactive zones.
         // however, we only load activity and schedules never any of the
         // structure
-        if (slz.active === true) { console.log('    Zone is active.'); }
+        // if (slz.active === true) { console.log('    Zone is active.'); }
         this.active = slz.active;
         if (slz.schedule !== null) {
-            console.log('    Schedule is present.');
+            // console.log('    Schedule is present.');
             this.schedule = new ZoneSchedule();
             this.schedule.loadSchedule(slz.schedule);
         }
+    }
+
+
+    logHasDevice(device) {
+        // not much at the moment, may expand in future
+        this.members++;
+    }
+
+    logHasActive(device) {
+        this.activemembers++;
     }
 
 
@@ -495,10 +507,7 @@ class ZoneDB {
     }
 
     refreshZones (zonelist) {
-        //console.log('Refresh Zones Called');
         for (let zone in zonelist) {
-        //console.log(zone)
-        //console.log('Adding Zone ' + zonelist[zone].name);
             this.addZone(zonelist[zone]);
         }
     }
@@ -519,12 +528,41 @@ class ZoneDB {
         // should be updated whenever zones change
         // returns a populated ZoneTreeObj
         // note root object will have name "unknown"
+        let thisZone = null;
+        if (parentId !== null) {
+            thisZone = this.getZoneById(parentId);
+            thisZone.activemembers = 0; // reset on the way in to the the recursion
+        }
+
         let result = new ZoneTreeObj(parentId, this.getName(parentId), level);
         level++;
         let zoneArr = this.findZonesWithParent(parentId);
         for (let zone in zoneArr) {
             result.addChild(this.zoneTreeFindKids(zoneArr[zone].id,level));
         }
+
+        // count up active members on the way out of recursion
+        // this won't work if non-base level zones have thermostats
+
+        if (parentId !== null) {
+            if (zoneArr.length == 0) {
+                // Base level (where thermostats should be)
+                if (thisZone.active === true) {
+                    // base level active so just set direct
+                    thisZone.activemembers = thisZone.members;
+                } else {
+                    // base level, not active, so pass up
+                    this.getZoneById(thisZone.parent).activemembers += thisZone.members;
+                }
+            } else {
+                if (thisZone.active === false) {
+                    // higher level not active, so pass up
+                    this.getZoneById(thisZone.parent).activemembers += thisZone.activemembers;
+                    thisZone.activemembers = 0;
+                }
+            }
+        }
+
         return result;
     }
 
@@ -551,7 +589,9 @@ class ZoneDB {
     enableZone (theId) {
         for (let zone in this.zonelist) {
             if (this.zonelist[zone].id == theId) {
-                return this.zonelist[zone].enable();
+                let result = this.zonelist[zone].enable();
+                this.updateZoneTree();
+                return result;
             }
         }
         console.log('Error finding zone by ID');
@@ -561,7 +601,9 @@ class ZoneDB {
     disableZone (theId, andDelete) {
         for (let zone in this.zonelist) {
             if (this.zonelist[zone].id == theId) {
-                return this.zonelist[zone].disable(andDelete);
+                let result = this.zonelist[zone].disable(andDelete);
+                this.updateZoneTree();
+                return result;
             }
         }
         console.log('Error finding zone by ID');
@@ -590,6 +632,22 @@ class ZoneDB {
             }
         }
         return result;
+    }
+
+
+    logDevice (device, zoneId) {
+        // log a thermostat as being in a zone
+        // recursive
+        let zone = this.getZoneById(zoneId);
+        zone.logHasDevice(device);
+        if (zone.parent != null) {
+            this.logDevice(device, zone.parent);
+        }
+    }
+
+    logNewDevice (device) {
+        // wrapper to initiate the above
+        this.logDevice(device, device.zone);
     }
 
 
@@ -632,7 +690,7 @@ class ZoneDB {
             // do we (still) have this zone defined?
             let foundZone = this.getZoneById(slz[zone].id);
             if (foundZone !== null) {
-                console.log('Loading zone schedule:' + slz[zone].name);
+                // console.log('Loading zone schedule:' + slz[zone].name);
                 foundZone.loadZone(slz[zone]);
             } else {
                 console.log('Loaded zone no longer exists, discarding.');

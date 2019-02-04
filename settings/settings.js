@@ -3,7 +3,8 @@ var logiSettings = {};
 var defaultSettings = {
     'awayMode': false,
     'mqttLogging': true,
-    'hwSchedule': false
+    'hwSchedule': false,
+    'showAllZones': false,
 };
 
 function onHomeyReady(homeyReady) {
@@ -138,6 +139,7 @@ function onHomeyReady(homeyReady) {
                 awayMode:logiSettings.awayMode,
                 mqttLogging: logiSettings.mqttLogging,
                 hwSchedule: logiSettings.hwSchedule,
+                showAllZones: true,
                 loaded: false,
                 selectedZone: null,
                 showingSettings: false,
@@ -165,6 +167,21 @@ function onHomeyReady(homeyReady) {
                     var myzones = [];
                     for (var zone in this.zones) {
                         if (this.zones[zone].active === true) {
+                            myzones.push(this.zones[zone]);
+                        }
+                    }
+                    return myzones;
+                },
+                populatedzones: function() {
+                    // returns a list of filtered list of zones
+                    if (this.showAllZones === true) {
+                        return this.zones;
+                    }
+                    // Else...
+                    // show only zones with thermostats in them.
+                    var myzones = [];
+                    for (var zone in this.zones) {
+                        if (this.zones[zone].members > 0) {
                             myzones.push(this.zones[zone]);
                         }
                     }

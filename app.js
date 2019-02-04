@@ -45,10 +45,6 @@ class Logi extends Homey.App {
         myZoneDB.refreshZones(allZones);
     }
 
-    async getZone(zoneId) {
-        return myZoneDB.getName(zoneId);
-    }
-
     getUIZones() {
         this.mlog('Get UI Zones Called');
         return myZoneDB.getOrderedZoneList();
@@ -141,10 +137,12 @@ class Logi extends Homey.App {
         // "Homey" or this.systemName
         this.mqttClient = new MQTTClient('homey/logi/logs');
         this.mlog('Logi Heating Scheduler initialising...');
-        await this.loadZones();
-        await this.enumerateDevices();
+        await this.loadZones(); // Get zones from Homey
+        this.loadZoneDB();      // Load our zone DB
+        await this.enumerateDevices();  // See what thermostats we have
+        myZoneDB.updateZoneTree();
         await this.registerCronJob();
-        this.loadZoneDB();
+
         this.mlog('Logi Heating Scheduler init complete.');
         //await this.saveZoneDB();
     }
@@ -274,7 +272,9 @@ class Logi extends Homey.App {
     // Add the device to application list
     async registerThermostat(device) {
         myThermostats.push(device); // GLOBAL VAR???
-        await this.addDeviceToZone(device);
+        let zoneName = myZoneDB.getName(device.zone);
+        this.mlog('Thermostat ' + device.name + ' is in zone ID: ' + device.zone + ' (' + zoneName + ')');
+        myZoneDB.logNewDevice(device);
         let targetTemp = this.getSchedule(device).getCurrentTarget();
         this.mlog(device.name + ' target temp: ' + targetTemp);
     }
@@ -298,11 +298,6 @@ class Logi extends Homey.App {
 
     } // End of addDevice
 
-
-    async addDeviceToZone(device) {
-        let zone = await this.getZone(device.zone);
-        this.mlog('Thermostat ' + device.name + ' is in zone ID: ' + device.zone + ' (' + zone + ')');
-    }
 
     getSchedule(device) {
         return myZoneDB.getSchedule(device.zone);
