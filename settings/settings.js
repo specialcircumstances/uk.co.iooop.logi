@@ -20,18 +20,6 @@ function onHomeyReady(homeyReady) {
                 logiSettings = savedSettings;
             }
         }
-        /*
-        document.getElementById('awayMode').checked = logiSettings.awayMode;
-        document.getElementById('mqttLogging').checked = logiSettings.mqttLogging;
-        document.getElementById('hwSchedule').checked = logiSettings.hwSchedule;
-        document.getElementById('notificationNoCommunicationMotion').checked = heimdallSettings.notificationNoCommunicationMotion
-        document.getElementById('notificationNoCommunicationContact').checked = heimdallSettings.notificationNoCommunicationContact
-        if ( document.getElementById('autoRefresh').checked ) {
-            document.getElementById("buttonRefresh").style = "display:none";
-        } else {
-            document.getElementById("buttonRefresh").style = "display:block";
-        }
-        */
 
         Vue.component('modal-del-setpoints', {
             props: ['setpoint'],

@@ -9,8 +9,8 @@
   <link rel="stylesheet" type="text/css" href="styles.css" />
   <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
   <!--script type="text/javascript" src="/manager/webserver/assets/js/jquery.js"></script-->
-  <!--script type="text/javascript" src="vue.min.js" data-origin="settings"></script-->
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.5.22/dist/vue.js"></script>
+  <script type="text/javascript" src="vue.min.js" data-origin="settings"></script>
+  <!--script src="https://cdn.jsdelivr.net/npm/vue@2.5.22/dist/vue.js"></script-->
   <script type="text/javascript" src="settings.js" data-origin="settings"></script>
 </head>
 
@@ -178,7 +178,10 @@
   <div id="app">
 
     <!-- MDL Progress Bar with Indeterminate Progress -->
-    <div v-if="!isLoaded()" id="loading" class="mdl-progress mdl-js-progress mdl-progress__indeterminate"></div>
+    <div v-if="!isLoaded()" id="loading">
+      <div class="mdl-progress mdl-js-progress mdl-progress__indeterminate"></div>
+      <h3> Loading... quick as I can... </h3>
+    </div>
 
     <div v-cloak id="settingsHeader">
       <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent section-header-button" v-on:click="showSettings()">
