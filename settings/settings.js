@@ -4,7 +4,7 @@ var defaultSettings = {
     'awayMode': false,
     'mqttLogging': true,
     'hwSchedule': false,
-    'showAllZones': false,
+    'showAllZones': false,    // This is a GUI only setting
 };
 
 function onHomeyReady(homeyReady) {
@@ -139,7 +139,7 @@ function onHomeyReady(homeyReady) {
                 awayMode:logiSettings.awayMode,
                 mqttLogging: logiSettings.mqttLogging,
                 hwSchedule: logiSettings.hwSchedule,
-                showAllZones: true,
+                showAllZones: false,
                 loaded: false,
                 selectedZone: null,
                 showingSettings: false,
@@ -273,6 +273,10 @@ function onHomeyReady(homeyReady) {
                     return;
                 },
                 changehwSchedule: function() {
+                    return;
+                },
+                changeShowAllZones: function() {
+                    this.showAllZones = !this.showAllZones;
                     return;
                 },
                 boostHeating: function() {

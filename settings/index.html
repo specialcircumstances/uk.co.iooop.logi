@@ -237,9 +237,15 @@
                   </span>
                 </span>
                 <span class="mdl-list__item-secondary-action">
-                  <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="cbshowallzones">
-                    <input type="checkbox" id="cbshowallzones" :checked="showAllZones" v-model="showAllZones" class="mdl-switch__input">
+
+                  <!-- I do not like doing this in this way, but I cannot get it to work with v-model -->
+                  <label v-if="showAllZones" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="cbshowallzones">
+                    <input type="checkbox" id="cbshowallzones" checked @click="changeShowAllZones" class="mdl-switch__input">
                   </label>
+                  <label v-if="!showAllZones" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="cbshowallzones">
+                    <input type="checkbox" id="cbshowallzones" unchecked @click="changeShowAllZones" class="mdl-switch__input">
+                  </label>
+
                 </span>
           </li>
 
