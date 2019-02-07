@@ -29,6 +29,9 @@ In no particular order...
 - [ ] Temporary Heating Boost
 - [ ] Call For Heat
 
+## Latest News
+This beta enables the Away Mode, allows you to hide zones that have no thermostats (now default), and now you can enable or disable the MQTT logging.
+
 ## Instructions
 ### Installation
 So, until I've published to the app store (assuming they approve it) if you want to try this application, you will need to download it into a directory and then install it manually using the Athom CLI (from that directory).
