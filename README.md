@@ -20,7 +20,7 @@ In no particular order...
 - [x] As many setpoints per day per zone as you like
 - [x] Clone schedule to other days
 - [x] Easy to edit (I think)
-- [ ] Away Mode
+- [x] Away Mode
 - [ ] Retain deactivated schedules
 - [ ] Schedule creation based on parent schedule.
 - [ ] Flow Integration
