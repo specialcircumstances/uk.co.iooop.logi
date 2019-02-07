@@ -175,10 +175,61 @@
     </transition>
   </template>
 
+
+  <template id="modal-setawaytemp-template">
+    <transition name="modal-setawaytemp">
+      <div class="modal-mask">
+        <div class="modal-wrapper">
+          <div class="modal-container">
+
+            <div class="modal-header">
+                    <h2>Set Away Temperature</h2>
+            </div>
+
+            <div class="modal-body">
+              <div class="mdl-grid schedule-edit-grid">
+                  <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                    <button @click="decaway()" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                      <i class="material-icons">remove_circle</i>
+                    </button>
+                  </div>
+                  <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch">
+                    {{mycloneawaytemp}} C
+                  </div>
+                  <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                    <button @click="incaway()" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                      <i class="material-icons">add_circle</i>
+                    </button>
+                  </div>
+              </div>
+            </div>
+
+            <div class="mdl-grid">
+                <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch modal-center">
+                  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored" @click="$emit('close')">
+                    Cancel
+                  </button>
+                </div>
+                <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch modal-center">
+                  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" @click="setAwayTemp(mycloneawaytemp)">
+                    OK
+                  </button>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </template>
+
+
   <div id="app">
 
     <!-- MDL Progress Bar with Indeterminate Progress -->
-    <div v-if="!isLoaded()" id="loading" class="mdl-progress mdl-js-progress mdl-progress__indeterminate"></div>
+    <div v-if="!isLoaded()" id="loading">
+      <div class="mdl-progress mdl-js-progress mdl-progress__indeterminate"></div>
+      <h3> Loading... quick as I can... </h3>
+    </div>
 
     <div v-cloak id="settingsHeader">
       <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent section-header-button" v-on:click="showSettings()">
@@ -195,11 +246,32 @@
                   </span>
                 </span>
                 <span class="mdl-list__item-secondary-action">
-                  <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" :for="awayMode">
-                    <input type="checkbox" :id="awayMode" class="mdl-switch__input" @click="changeAwayMode()" unchecked>
+
+                  <!-- I do not like doing this in this way, but I cannot get it to work with v-model -->
+                  <label v-if="awayMode" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="cbawaymode">
+                    <input type="checkbox" id="cbawaymode" checked @click="changeAwayMode" class="mdl-switch__input">
                   </label>
+                  <label v-if="!awayMode" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="cbawaymode">
+                    <input type="checkbox" id="cbawaymode" unchecked @click="changeAwayMode" class="mdl-switch__input">
+                  </label>
+
                 </span>
           </li>
+
+          <li v-if="awayMode" class="mdl-list__item mdl-list__item--three-line">
+                <span class="mdl-list__item-primary-content" data-i18n="settings.awayMode">
+                  <span>Away Mode Temp</span>
+                  <span class="mdl-list__item-text-body">
+                    Setpoint Temperature for Away Mode
+                  </span>
+                </span>
+                <span class="mdl-list__item-secondary-action">
+                  <button class="mdl-button mdl-js-button mdl-button--primary" @click="showSetAway()">
+                    {{ awayTemp }}
+                  </button>
+                </span>
+          </li>
+
 
           <li class="mdl-list__item mdl-list__item--three-line">
             <span class="mdl-list__item-primary-content" data-i18n="settings.mqttLogging">
@@ -209,9 +281,15 @@
               </span>
             </span>
             <span class="mdl-list__item-secondary-action">
-              <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" :for="mqttLogging">
-                <input type="checkbox" :id="mqttLogging" class="mdl-switch__input" @click="changeMqttLogging()" checked>
+
+              <!-- I do not like doing this in this way, but I cannot get it to work with v-model -->
+              <label v-if="mqttLogging" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="mqttLogging">
+                <input type="checkbox" id="mqttLogging" checked @click="changeMqttLogging" class="mdl-switch__input">
               </label>
+              <label v-if="!mqttLogging" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="mqttLogging">
+                <input type="checkbox" id="mqttLogging" unchecked @click="changeMqttLogging" class="mdl-switch__input">
+              </label>
+
             </span>
           </li>
 
@@ -226,6 +304,26 @@
                   <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" :for="hwSchedule">
                     <input type="checkbox" :id="hwSchedule" class="mdl-switch__input" @click="changehwSchedule()" unchecked>
                   </label>
+                </span>
+          </li>
+
+          <li class="mdl-list__item mdl-list__item--three-line">
+                <span class="mdl-list__item-primary-content">
+                  <span>Show All Zones</span>
+                  <span class="mdl-list__item-text-body">
+                    Show all zones, even those which do not contain thermostats.
+                  </span>
+                </span>
+                <span class="mdl-list__item-secondary-action">
+
+                  <!-- I do not like doing this in this way, but I cannot get it to work with v-model -->
+                  <label v-if="showAllZones" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="cbshowallzones">
+                    <input type="checkbox" id="cbshowallzones" checked @click="changeShowAllZones" class="mdl-switch__input">
+                  </label>
+                  <label v-if="!showAllZones" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="cbshowallzones">
+                    <input type="checkbox" id="cbshowallzones" unchecked @click="changeShowAllZones" class="mdl-switch__input">
+                  </label>
+
                 </span>
           </li>
 
@@ -247,6 +345,9 @@
           </button>
         </div>
 
+        <modal-setawaytemp v-if="showModalSetAway" @close="showModalSetAway = false" :cloneawaytemp="awayTemp">
+        </modal-setawaytemp>
+
       </div> <!-- End of div settings -->
     </div>
 
@@ -256,13 +357,13 @@
       </button>
       <div v-show="showingZones">
         <ul id="zonesSection" class="mdl-list zones-list-control">
-              <li class="mdl-list__item zones-list-item-condensed" v-for="zone in zones">
+              <li class="mdl-list__item zones-list-item-condensed" v-for="zone in populatedzones">
                 <span class="mdl-list__item-primary-content">
                   <i class="material-icons mdl-list__item-avatar">{{zone.icon}}</i>
                   <span v-if="zone.level == 2">--</span>
                   <span v-if="zone.level == 3">----</span>
                   <span v-if="zone.level == 4">------</span>
-                  <span>{{ zone.name }}</span>
+                  <span>{{ zone.name }} ({{ zone.activemembers }}/{{ zone.members }})</span>
                 </span>
                 <span class="mdl-list__item-secondary-action">
                   <label v-if="!isEnabled(zone)" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" :for="zone.id">
@@ -346,8 +447,6 @@
 
           <modal-clone-setpoints v-if="showModalCloneSetpoints" @close="showModalCloneSetpoints = false" :cloneorigday="cloneorigday" :clonenewdays="clonenewdays">
           </modal-clone-setpoints>
-
-
 
       </div> <!--End of showingSChedules-->
     </div>

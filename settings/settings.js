@@ -1,9 +1,11 @@
-var logiSettings = {};
+let logiSettings = {};
 
-var defaultSettings = {
+let defaultSettings = {
     'awayMode': false,
+    'awayTemp': 10,
     'mqttLogging': true,
-    'hwSchedule': false
+    'hwSchedule': false,
+    'showAllZones': false,    // This is a GUI only setting
 };
 
 function onHomeyReady(homeyReady) {
@@ -19,18 +21,6 @@ function onHomeyReady(homeyReady) {
                 logiSettings = savedSettings;
             }
         }
-        /*
-        document.getElementById('awayMode').checked = logiSettings.awayMode;
-        document.getElementById('mqttLogging').checked = logiSettings.mqttLogging;
-        document.getElementById('hwSchedule').checked = logiSettings.hwSchedule;
-        document.getElementById('notificationNoCommunicationMotion').checked = heimdallSettings.notificationNoCommunicationMotion
-        document.getElementById('notificationNoCommunicationContact').checked = heimdallSettings.notificationNoCommunicationContact
-        if ( document.getElementById('autoRefresh').checked ) {
-            document.getElementById("buttonRefresh").style = "display:none";
-        } else {
-            document.getElementById("buttonRefresh").style = "display:block";
-        }
-        */
 
         Vue.component('modal-del-setpoints', {
             props: ['setpoint'],
@@ -122,6 +112,42 @@ function onHomeyReady(homeyReady) {
             }
         });
 
+        Vue.component('modal-setawaytemp', {
+            props: ['cloneawaytemp'],
+            template: '#modal-setawaytemp-template',
+            data: function () {
+                return {
+                    mycloneawaytemp: this.cloneawaytemp
+                };
+            },
+            methods: {
+                setAwayTemp(temp) {
+                    this.$parent.setAwayTemp(temp);
+                },
+                incval: function(val,step,min,max) {
+                    val += step;
+                    if (val > max) {
+                        val = min;
+                    }
+                    return val;
+                },
+                decval: function(val,step,min,max) {
+                    val -= step;
+                    if (val < min) {
+                        val = max;
+                    }
+                    return val;
+                },
+                incaway: function() {
+                    this.mycloneawaytemp = this.incval(this.mycloneawaytemp,0.5,0,80);
+                },
+                decaway: function() {
+                    this.mycloneawaytemp = this.decval(this.mycloneawaytemp,0.5,0,0,80);
+                },
+            }
+        });
+
+
         var app = new Vue({
             el: '#app',
             data: {
@@ -136,8 +162,10 @@ function onHomeyReady(homeyReady) {
                     }
                 ],
                 awayMode:logiSettings.awayMode,
+                awayTemp: logiSettings.awayTemp,
                 mqttLogging: logiSettings.mqttLogging,
                 hwSchedule: logiSettings.hwSchedule,
+                showAllZones: false,
                 loaded: false,
                 selectedZone: null,
                 showingSettings: false,
@@ -149,6 +177,7 @@ function onHomeyReady(homeyReady) {
                 espmodalitem : {},
                 newsetpointmode: false,
                 showModalCloneSetpoints: false,
+                showModalSetAway: false,
                 cloneorigday: 0,
                 clonenewdays: [],
                 currentDay: 0
@@ -165,6 +194,21 @@ function onHomeyReady(homeyReady) {
                     var myzones = [];
                     for (var zone in this.zones) {
                         if (this.zones[zone].active === true) {
+                            myzones.push(this.zones[zone]);
+                        }
+                    }
+                    return myzones;
+                },
+                populatedzones: function() {
+                    // returns a list of filtered list of zones
+                    if (this.showAllZones === true) {
+                        return this.zones;
+                    }
+                    // Else...
+                    // show only zones with thermostats in them.
+                    var myzones = [];
+                    for (var zone in this.zones) {
+                        if (this.zones[zone].members > 0) {
                             myzones.push(this.zones[zone]);
                         }
                     }
@@ -250,12 +294,21 @@ function onHomeyReady(homeyReady) {
                     });
                 },
                 changeAwayMode: function() {
+                    this.awayMode = !this.awayMode;
+                    this.saveSettings();
                     return;
                 },
                 changeMqttLogging: function() {
+                    this.mqttLogging = !this.mqttLogging;
+                    this.saveSettings();
                     return;
                 },
                 changehwSchedule: function() {
+                    return;
+                },
+                changeShowAllZones: function() {
+                    this.showAllZones = !this.showAllZones;
+                    this.saveSettings();
                     return;
                 },
                 boostHeating: function() {
@@ -391,21 +444,28 @@ function onHomeyReady(homeyReady) {
                         myself.getZones();
                     });
                     this.showModalCloneSetpoints = false;
+                },
+                showSetAway: function () {
+                    this.showModalSetAway = true;
+                },
+                setAwayTemp: function(temp) {
+                    this.awayTemp = temp;
+                    this.showModalSetAway = false;
+                    this.saveSettings();
+                },
+                saveSettings: function() {
+                    logiSettings.awayMode = this.awayMode;
+                    logiSettings.awayTemp = this.awayTemp;
+                    logiSettings.mqttLogging = this.mqttLogging;
+                    logiSettings.hwSchedule = this.hwSchedule;
+                    logiSettings.showAllZones = this.showAllZones;
+                    Homey.set('settings', logiSettings);
                 }
-
             }
         });
 
         Homey.ready();
     });
-}
-
-
-function saveSettings() {
-    logiSettings.awayMode = document.getElementById('awayMode').checked;
-    logiSettings.mqttLogging = document.getElementById('mqttLogging').checked;
-    logiSettings.hwSchedule = document.getElementById('hwSchedule').checked;
-    Homey.set('settings', logiSettings);
 }
 
 

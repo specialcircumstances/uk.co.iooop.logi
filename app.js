@@ -8,15 +8,41 @@ const MQTTClient = require('./mqtt/MQTTClient.js');
 const Message = require('./mqtt/Message.js');
 
 
-var logiSettings = {};
-var defaultSettings = {};
-var myThermostats = [];
-var myZoneDB = new ZoneDB();
+let logiSettings = {};
+let defaultSettings = {
+    'awayMode': false,
+    'awayTemp': 10,
+    'mqttLogging': true,
+    'hwSchedule': false,
+    'showAllZones': false,    // This is a GUI only setting
+};
+let myThermostats = [];
+let myZoneDB = new ZoneDB();
 
 
-// Most of this code from Heimdall
+// Some of this code from Heimdall :)
 
 class Logi extends Homey.App {
+
+
+    async onInit() {
+        this.log('Logi is initialising...');
+        this.api = await this.getApi();
+        // "Homey" or this.systemName
+        this.mqttClient = new MQTTClient('homey/logi/logs');
+        this.mlog('Logi Heating Scheduler initialising...');
+        await this.loadZones(); // Get zones from Homey
+        await this.loadZoneDB();      // Load our zone DB
+        await this.enumerateDevices();  // See what thermostats we have
+        myZoneDB.updateZoneTree();
+        await this.loadSettings();
+        this.initSettingsListener();
+
+        // OK - ready to rock and roll
+        await this.registerCronJob();
+        this.mlog('Logi Heating Scheduler init complete.');
+        //await this.saveZoneDB();
+    }
 
     // Get API control function
     getApi() {
@@ -27,9 +53,11 @@ class Logi extends Homey.App {
     }
 
     async mlog(message) {
-        if (this.mqttClient.isRegistered()) {
-            const msg = new Message('log', message);
-            this.mqttClient.publish(msg);
+        if (logiSettings.mqttLogging === true) {
+            if (this.mqttClient.isRegistered()) {
+                const msg = new Message('log', message);
+                this.mqttClient.publish(msg);
+            }
         }
         this.log(message);
     }
@@ -43,10 +71,6 @@ class Logi extends Homey.App {
         const api = await this.getApi();
         const allZones = await this.api.zones.getZones()
         myZoneDB.refreshZones(allZones);
-    }
-
-    async getZone(zoneId) {
-        return myZoneDB.getName(zoneId);
     }
 
     getUIZones() {
@@ -124,29 +148,16 @@ class Logi extends Homey.App {
         this.mlog('Saved schedules to Homey settings.');
     }
 
-    loadZoneDB() {
+    async loadZoneDB() {
         // Loads zoneDB from Homey settings, if it is present.
-        let result = JSON.parse(Homey.ManagerSettings.get('schedules'));
+        let schedules = await Homey.ManagerSettings.get('schedules');
+        let result = JSON.parse(schedules);
         if (typeof result.zonelist !== 'undefined') {
             myZoneDB.loadSavedSettings(result);
             this.mlog('Loaded saved schedules'); // should add more error handling
         } else {
             this.mlog('Could not load saved schedules from Homey.');
         }
-    }
-
-    async onInit() {
-        this.log('Logi is initialising...');
-        this.api = await this.getApi();
-        // "Homey" or this.systemName
-        this.mqttClient = new MQTTClient('homey/logi/logs');
-        this.mlog('Logi Heating Scheduler initialising...');
-        await this.loadZones();
-        await this.enumerateDevices();
-        await this.registerCronJob();
-        this.loadZoneDB();
-        this.mlog('Logi Heating Scheduler init complete.');
-        //await this.saveZoneDB();
     }
 
     async registerCronJob() {
@@ -210,7 +221,12 @@ class Logi extends Homey.App {
         this.mlog('Checking setpoints...');
         for (let device in myThermostats) {
             let thisDevice = myThermostats[device];
-            let targetTemp = await this.getSchedule(thisDevice).getCurrentTarget();
+            let targetTemp = 10;
+            if (logiSettings.awayMode === true) {
+                targetTemp = logiSettings.awayTemp;
+            } else {
+                targetTemp = await this.getSchedule(thisDevice).getCurrentTarget();
+            }
             let actualTemp = await this.getThermostatCurrentSetting(thisDevice);
             //this.log(thisDevice.name + ' target temp: ' + targetTemp + ' actual setting: ' + actualTemp);
             if (targetTemp != actualTemp) {
@@ -274,7 +290,9 @@ class Logi extends Homey.App {
     // Add the device to application list
     async registerThermostat(device) {
         myThermostats.push(device); // GLOBAL VAR???
-        await this.addDeviceToZone(device);
+        let zoneName = myZoneDB.getName(device.zone);
+        this.mlog('Thermostat ' + device.name + ' is in zone ID: ' + device.zone + ' (' + zoneName + ')');
+        myZoneDB.logNewDevice(device);
         let targetTemp = this.getSchedule(device).getCurrentTarget();
         this.mlog(device.name + ' target temp: ' + targetTemp);
     }
@@ -298,11 +316,6 @@ class Logi extends Homey.App {
 
     } // End of addDevice
 
-
-    async addDeviceToZone(device) {
-        let zone = await this.getZone(device.zone);
-        this.mlog('Thermostat ' + device.name + ' is in zone ID: ' + device.zone + ' (' + zone + ')');
-    }
 
     getSchedule(device) {
         return myZoneDB.getSchedule(device.zone);
@@ -334,14 +347,31 @@ class Logi extends Homey.App {
 
     } // End of stateChange
 
+    async loadSettings() {
+        // Should probably add some error handling here?
+        // And load defaults if nothing set
+        logiSettings = await Homey.ManagerSettings.get('settings');
+        if (logiSettings.awayMode == (null || undefined )) {
+            logiSettings = defaultSettings;
+            this.mlog('Loaded default settings....');
+        } else {
+            this.mlog('Loaded settings....');
+
+        }
+        this.mlog(logiSettings);
+    }
+
+    initSettingsListener() {
+        Homey.ManagerSettings.on('set', (variable) => {
+            if (variable === 'settings') {
+                logiSettings = Homey.ManagerSettings.get('settings');
+                this.mlog('New settings:');
+                this.mlog(logiSettings);
+            }
+        });
+    }
+
+
 } // End of Logi class
 
 module.exports = Logi;
-
-Homey.ManagerSettings.on('set', (variable) => {
-    if (variable === 'settings') {
-        logiSettings = Homey.ManagerSettings.get('settings');
-        this.mlog('New settings:');
-        this.mlog(logiSettings);
-    }
-});
