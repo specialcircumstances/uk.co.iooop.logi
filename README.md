@@ -56,7 +56,7 @@ Time is 24 hour. Temperature is in C.
 
 ## Important Notes
 
-Much credit to the Hemidall application (https://apps.athom.com/app/com.uc.heimdall) upon which I drew heavily.
+Much credit to the Heimdall application (https://apps.athom.com/app/com.uc.heimdall) upon which I drew heavily.
 
 If you have installed it, this application will also use the Homey MQTT Client (https://apps.athom.com/app/nl.scanno.mqtt).
 
