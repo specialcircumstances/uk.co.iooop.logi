@@ -16,7 +16,7 @@ let defaultSettings = {
     'hwSchedule': false,
     'showAllZones': false,    // This is a GUI only setting
     'manualOverride': true,
-    'overridePeriod': 5,     // Time in minutes to suspend schedule
+    'overridePeriod': 90,     // Time in minutes to suspend schedule
 };
 let myThermostats = [];
 let myZoneDB = new ZoneDB();
