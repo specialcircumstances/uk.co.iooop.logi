@@ -15,6 +15,8 @@ let defaultSettings = {
     'mqttLogging': true,
     'hwSchedule': false,
     'showAllZones': false,    // This is a GUI only setting
+    'manualOverride': true,
+    'overridePeriod': 5,     // Time in minutes to suspend schedule
 };
 let myThermostats = [];
 let myZoneDB = new ZoneDB();
@@ -163,11 +165,14 @@ class Logi extends Homey.App {
     async registerCronJob() {
         let result;
         try {
+            this.mlog('Unregistering All Cron Tasks...');
             result = await ManagerCron.unregisterAllTasks();
+            this.mlog('Done.');
         } catch (err) {
             this.mlog('Unregister All Cron Tasks error : ' + err);
         }
         try {
+            this.mlog('Registering my Cron Job...');
             result = await ManagerCron.registerTask('logiminutecron', '* * * * *', 'oneminute');
             this.mlog('Register Cron Job result: ' + JSON.stringify(result));
         } catch (err) {
@@ -180,7 +185,7 @@ class Logi extends Homey.App {
             this.mlog('Register Cron Job error : ' + err);
         }
 
-        this.registerCronListener();
+        await this.registerCronListener();
     }
 
     async registerCronListener() {
@@ -197,12 +202,15 @@ class Logi extends Homey.App {
         }
     }
 
+    /*
     async getThermostatCurrentSetting(device) {
         const api = await this.getApi();
         let myDev = await api.devices.getDevice(device);
         return myDev.capabilitiesObj['target_temperature']['value'];
     }
+    */
 
+    /* old method
     async setThermostat(opts) {
         const api = await this.getApi();
         //this.log(opts)
@@ -214,31 +222,50 @@ class Logi extends Homey.App {
         }
         return;
     }
+    */
 
     async processSchedules() {
     // called by Cron
     // Runs the one minute Checks
         this.mlog('Checking setpoints...');
         for (let device in myThermostats) {
+            // check if device is eligible
+            //this.mlog('Device: ' + device.name + ' overide ' + device.overide)
             let thisDevice = myThermostats[device];
-            let targetTemp = 10;
+            if (thisDevice.exclude === true) { continue; }
+            if (thisDevice.override > 0) {
+                this.mlog('Not updating device: ' + thisDevice.name + ' manual overide for ' + thisDevice.override + ' minutes.');
+                thisDevice.override--;
+                continue;
+            }
+
+            let targetTemp = 10;  // why not?
             if (logiSettings.awayMode === true) {
                 targetTemp = logiSettings.awayTemp;
             } else {
-                targetTemp = await this.getSchedule(thisDevice).getCurrentTarget();
+                targetTemp = this.getSchedule(thisDevice).getCurrentTarget();
             }
-            let actualTemp = await this.getThermostatCurrentSetting(thisDevice);
+            let actualTemp = thisDevice.cInst.target_temperature.value;
             //this.log(thisDevice.name + ' target temp: ' + targetTemp + ' actual setting: ' + actualTemp);
             if (targetTemp != actualTemp) {
                 this.mlog('Updating ' + thisDevice.name + ' Target: ' + targetTemp + 'C, Current: ' + actualTemp + 'C');
-                let opts = {
+                /* let opts = {
                     deviceId: thisDevice.id,
                     capabilityId: 'target_temperature',
                     value: targetTemp
                 };
                 await this.setThermostat(opts);
+                use cap instance instead */
+                try {
+                    thisDevice.shadowset = targetTemp;
+                    await thisDevice.cInst.target_temperature.setValue(targetTemp);
+                } catch (err) {
+                    this.mlog('Error setting thermostat: ' + err + ' Data: ');
+                    this.mlog(thisDevice.id, targetTemp);
+                }
             }
         }
+        this.mlog('Done checking setpoints.');
     }
 
     async enumerateDevices() {
@@ -289,12 +316,27 @@ class Logi extends Homey.App {
 
     // Add the device to application list
     async registerThermostat(device) {
+        // Add some fields:
+        device['exclude'] = false;  // Allow exclusion from Scheduling
+        device['override'] = 0; // simple countdown to end of override in minutes
+        device['shadowset'] = 0; // workaround for self trigger of stateChange listener
         myThermostats.push(device); // GLOBAL VAR???
         let zoneName = myZoneDB.getName(device.zone);
         this.mlog('Thermostat ' + device.name + ' is in zone ID: ' + device.zone + ' (' + zoneName + ')');
         myZoneDB.logNewDevice(device);
         let targetTemp = this.getSchedule(device).getCurrentTarget();
         this.mlog(device.name + ' target temp: ' + targetTemp);
+    }
+
+
+    setOverride(someDevice) {
+        for (let myDevice in myThermostats) {
+            if (myThermostats[myDevice].id == someDevice.id) {
+                myThermostats[myDevice].override = logiSettings['overridePeriod'];
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -310,8 +352,9 @@ class Logi extends Homey.App {
         // console.log(device.capabilities.indexOf("target_temperature"))
         if ('target_temperature' in device.capabilitiesObj) {
             this.mlog('Found thermostat:        ' + device.name);
-            this.registerThermostat(device);
+            device['cInst'] = [];
             this.attachEventListener(device, 'thermostat');
+            this.registerThermostat(device);
         }
 
     } // End of addDevice
@@ -331,7 +374,7 @@ class Logi extends Homey.App {
             this.stateChange(device,alarm_motion,sensorType)
         },250));
         */
-            device.makeCapabilityInstance('target_temperature', function(device) {
+            device['cInst']['target_temperature'] = device.makeCapabilityInstance('target_temperature', function(device) {
                 this.stateChange(device);
             }.bind(this, device));
             break;
@@ -341,23 +384,38 @@ class Logi extends Homey.App {
 
 
     // this function gets called when a device with an attached eventlistener fires an event.
-    // At the moment this does nothing but log
-    async stateChange(device) {
-        this.mlog('stateChange:            ' + device.name);
-
+    async stateChange(thisDevice) {
+        // thisDevice being the Homey device, not my own list
+        this.mlog('stateChange:            ' + thisDevice.name);
+        //let actualTemp = await this.getThermostatCurrentSetting(thisDevice);
+        //let actualTemp = thisDevice.cInst.target_temperature.value;
+        let targetTemp = logiSettings.awayTemp;
+        if (logiSettings.awayMode === false) {
+            targetTemp = this.getSchedule(thisDevice).getCurrentTarget();
+        }
+        if ((thisDevice.shadowset != targetTemp) && (logiSettings.manualOverride === true)) {
+            // Untested assertion is that this will only be the case with a manual intervention
+            this.mlog('Setting manual override for ' + logiSettings['overridePeriod'] + ' minutes.');
+            this.setOverride(thisDevice);
+        }
     } // End of stateChange
 
-    async loadSettings() {
-        // Should probably add some error handling here?
-        // And load defaults if nothing set
-        logiSettings = await Homey.ManagerSettings.get('settings');
-        if (logiSettings.awayMode == (null || undefined )) {
-            logiSettings = defaultSettings;
-            this.mlog('Loaded default settings....');
-        } else {
-            this.mlog('Loaded settings....');
 
+    async loadSettings() {
+        // New method, load all defaults then overwrite with any saved
+        // Easier for upgrades
+        // This is ONLY run at init.
+        logiSettings = defaultSettings;
+        let loadedSettings = await Homey.ManagerSettings.get('settings');
+        //  Read in properties
+        for (let property in loadedSettings) {
+            if (loadedSettings.hasOwnProperty(property)) {
+                logiSettings[property] = loadedSettings[property];
+            }
         }
+        // Resave for GUI, in case we have added anything
+        await Homey.ManagerSettings.set('settings', logiSettings);
+        this.mlog('Loaded settings....');
         this.mlog(logiSettings);
     }
 
