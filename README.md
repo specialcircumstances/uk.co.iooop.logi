@@ -16,6 +16,8 @@ In no particular order...
 - [x] Automatically detects and affects all thermostats in zone
 - [x] Integration with Homey MQTT Client
 - [ ] Option to exclude individual thermostats
+- [X] Local/Manual Override
+- [X] Quiesce schedule for set period in response to manual operation
 - [x] Zone by Zone, Weekly Day by Day Schedules
 - [x] As many setpoints per day per zone as you like
 - [x] Clone schedule to other days
@@ -30,15 +32,9 @@ In no particular order...
 - [ ] Call For Heat
 
 ## Latest News
-This beta enables the Away Mode, allows you to hide zones that have no thermostats (now default), and now you can enable or disable the MQTT logging.
+Beta 2.0.2 - Adds Manual Override with Timeout, plus various minor improvements to the code.
 
 ## Instructions
-### Installation
-So, until I've published to the app store (assuming they approve it) if you want to try this application, you will need to download it into a directory and then install it manually using the Athom CLI (from that directory).
-- Install Node.js
-- Install athom cli (npm install -g athom-cli)
-- Install the application to your Homey (athom app install)
-
 ### Setup
 All setup is via the Application Settings in the Homey App on your phone. It should be fairly self explanatory.
 

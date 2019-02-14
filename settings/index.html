@@ -222,6 +222,52 @@
     </transition>
   </template>
 
+  <template id="modal-setorperiod-template">
+    <transition name="modal-setorperiod">
+      <div class="modal-mask">
+        <div class="modal-wrapper">
+          <div class="modal-container">
+
+            <div class="modal-header">
+                    <h2>Set Override Period</h2>
+            </div>
+
+            <div class="modal-body">
+              <div class="mdl-grid schedule-edit-grid">
+                  <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                    <button @click="decperiod()" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                      <i class="material-icons">remove_circle</i>
+                    </button>
+                  </div>
+                  <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch">
+                    {{mycloneorperiod}} mins
+                  </div>
+                  <div class="mdl-cell mdl-cell--1-col mdl-cell--stretch">
+                    <button @click="incperiod()" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--colored button-repad">
+                      <i class="material-icons">add_circle</i>
+                    </button>
+                  </div>
+              </div>
+            </div>
+
+            <div class="mdl-grid">
+                <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch modal-center">
+                  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored" @click="$emit('close')">
+                    Cancel
+                  </button>
+                </div>
+                <div class="mdl-cell mdl-cell--2-col mdl-cell--stretch modal-center">
+                  <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" @click="setORPeriod(mycloneorperiod)">
+                    OK
+                  </button>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </template>
+
 
   <div id="app">
 
@@ -271,6 +317,43 @@
                   </button>
                 </span>
           </li>
+
+
+
+          <li class="mdl-list__item mdl-list__item--three-line">
+                <span class="mdl-list__item-primary-content" data-i18n="settings.manualOverride">
+                  <span>Allow Manual Override</span>
+                  <span class="mdl-list__item-text-body">
+                    When set, allows manual override of thermostat values.
+                  </span>
+                </span>
+                <span class="mdl-list__item-secondary-action">
+
+                  <!-- I do not like doing this in this way, but I cannot get it to work with v-model -->
+                  <label v-if="manualOverride" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="cbmanoverride">
+                    <input type="checkbox" id="cbmanoverride" checked @click="changeManualOverride" class="mdl-switch__input">
+                  </label>
+                  <label v-if="!manualOverride" class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="cbmanoverride">
+                    <input type="checkbox" id="cbmanoverride" unchecked @click="changeManualOverride" class="mdl-switch__input">
+                  </label>
+
+                </span>
+          </li>
+
+          <li v-if="manualOverride" class="mdl-list__item mdl-list__item--three-line">
+                <span class="mdl-list__item-primary-content" data-i18n="settings.awayMode">
+                  <span>Override Duration</span>
+                  <span class="mdl-list__item-text-body">
+                    How long should the override last for (in minutes)?
+                  </span>
+                </span>
+                <span class="mdl-list__item-secondary-action">
+                  <button class="mdl-button mdl-js-button mdl-button--primary" @click="showSetOverridePeriod()">
+                    {{ overridePeriod }}
+                  </button>
+                </span>
+          </li>
+
 
 
           <li class="mdl-list__item mdl-list__item--three-line">
@@ -347,6 +430,8 @@
 
         <modal-setawaytemp v-if="showModalSetAway" @close="showModalSetAway = false" :cloneawaytemp="awayTemp">
         </modal-setawaytemp>
+        <modal-setorperiod v-if="showModalSetOverridePeriod" @close="showModalSetOverridePeriod = false" :cloneorperiod="overridePeriod">
+        </modal-setorperiod>
 
       </div> <!-- End of div settings -->
     </div>

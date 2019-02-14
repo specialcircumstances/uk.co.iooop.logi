@@ -9,7 +9,7 @@ let defaultSettings = {
 };
 
 function onHomeyReady(homeyReady) {
-    Homey = homeyReady;
+    Homey = homeyReady; // Should this be a let???
     logiSettings = defaultSettings;
     Homey.get('settings', function(err, savedSettings) {
         if (err) {
@@ -147,6 +147,41 @@ function onHomeyReady(homeyReady) {
             }
         });
 
+        Vue.component('modal-setorperiod', {
+            props: ['cloneorperiod'],
+            template: '#modal-setorperiod-template',
+            data: function () {
+                return {
+                    mycloneorperiod: this.cloneorperiod
+                };
+            },
+            methods: {
+                setORPeriod(period) {
+                    this.$parent.setORPeriod(period);
+                },
+                incval: function(val,step,min,max) {
+                    val += step;
+                    if (val > max) {
+                        val = min;
+                    }
+                    return val;
+                },
+                decval: function(val,step,min,max) {
+                    val -= step;
+                    if (val < min) {
+                        val = max;
+                    }
+                    return val;
+                },
+                incperiod: function() {
+                    this.mycloneorperiod = this.incval(this.mycloneorperiod,10,0,1800);
+                },
+                decperiod: function() {
+                    this.mycloneorperiod = this.decval(this.mycloneorperiod,10,0,1800);
+                },
+            }
+        });
+
 
         var app = new Vue({
             el: '#app',
@@ -165,6 +200,8 @@ function onHomeyReady(homeyReady) {
                 awayTemp: logiSettings.awayTemp,
                 mqttLogging: logiSettings.mqttLogging,
                 hwSchedule: logiSettings.hwSchedule,
+                manualOverride: logiSettings.manualOverride,
+                overridePeriod: logiSettings.overridePeriod,
                 showAllZones: false,
                 loaded: false,
                 selectedZone: null,
@@ -180,7 +217,8 @@ function onHomeyReady(homeyReady) {
                 showModalSetAway: false,
                 cloneorigday: 0,
                 clonenewdays: [],
-                currentDay: 0
+                currentDay: 0,
+                showModalSetOverridePeriod: false,
             },
             async mounted() {
                 var myself = this;
@@ -295,6 +333,11 @@ function onHomeyReady(homeyReady) {
                 },
                 changeAwayMode: function() {
                     this.awayMode = !this.awayMode;
+                    this.saveSettings();
+                    return;
+                },
+                changeManualOverride: function() {
+                    this.manualOverride = !this.manualOverride;
                     this.saveSettings();
                     return;
                 },
@@ -453,12 +496,22 @@ function onHomeyReady(homeyReady) {
                     this.showModalSetAway = false;
                     this.saveSettings();
                 },
+                showSetOverridePeriod: function () {
+                    this.showModalSetOverridePeriod = true;
+                },
+                setORPeriod: function(period) {
+                    this.overridePeriod= period;
+                    this.showModalSetOverridePeriod = false;
+                    this.saveSettings();
+                },
                 saveSettings: function() {
                     logiSettings.awayMode = this.awayMode;
                     logiSettings.awayTemp = this.awayTemp;
                     logiSettings.mqttLogging = this.mqttLogging;
                     logiSettings.hwSchedule = this.hwSchedule;
                     logiSettings.showAllZones = this.showAllZones;
+                    logiSettings.manualOverride = this.manualOverride;
+                    logiSettings.overridePeriod = this.overridePeriod;
                     Homey.set('settings', logiSettings);
                 }
             }
