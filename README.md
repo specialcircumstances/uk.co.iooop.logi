@@ -6,6 +6,10 @@ In Norse mythology, Logi, Loge (Old Norse "fire") or Hálogi ("High Flame") is a
 
 This in fact is a Homey App to schedule changes to thermostats in your home. It's certainly not the only one, and probably not the best, but I figured I'd share it anyway. It's what I use at home.
 
+## Important Note
+
+I no longer use Homey (sorry I went to Home Assistant). This app is not maintained. This will be the last update to this repo.
+
 ## Current and Current Planned Feature Set
 
 In no particular order...
